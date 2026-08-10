@@ -1,0 +1,45 @@
+MediVision - How to run
+=======================
+
+ONE-TIME SETUP
+  Install Python 3.12 from https://www.python.org/downloads/
+  (TensorFlow does not support Python 3.14, so 3.12 is required.)
+  During install, tick "Add python.exe to PATH".
+
+TO RUN THE FULL APP LOCALLY (with live AI analysis)
+  1. Double-click  run_backend.bat
+       - first run installs dependencies and loads the 4 models (30-60s)
+       - wait until it says:  Running on http://0.0.0.0:5000
+       - leave this window open
+  2. Open  http://localhost:5000  in your browser
+       - this one address now serves both the API and the web page,
+         so run_frontend.bat is no longer needed for local use
+  3. Upload an image and click "Analyze Image".
+
+SHARE IT WITH ANYONE, ANYWHERE - FOR FREE (ngrok tunnel)
+  One-time setup:
+    1. Run run_backend.bat once (so the Python venv exists), then close it.
+    2. Sign up free at https://ngrok.com and copy your authtoken.
+    3. Download ngrok for Windows (https://ngrok.com/download), unzip it,
+       and either add its folder to PATH or drop ngrok.exe into this
+       MediVision_GUI folder.
+    4. Run once:  ngrok config add-authtoken YOUR_TOKEN
+  Every time you want to go live:
+    Double-click  run_public.bat
+       - opens the MediVision server + a public ngrok tunnel
+       - copy the https://....ngrok-free.app link from the ngrok window
+       - send that link to anyone, anywhere - works on their phone/laptop
+       - keep both windows open (and this PC on) while they're using it
+       - the link changes each time you restart the tunnel (free plan)
+
+JUST WANT TO SEE THE INTERFACE (no backend needed)
+  Open  frontend/index.html  in your browser.
+  To preview a full result page without the backend, open:
+       frontend/index.html#demo
+
+NOTES
+  - Images are processed in memory and never saved.
+  - On the "How It Works" page, replace the four sample model
+    metrics (tagged data-metric in index.html) with your real
+    validation numbers before submitting.
+  - Educational use only - not a medical device.

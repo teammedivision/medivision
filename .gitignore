@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+api/venv312/
+api/venv/
+.venv/
+
+# The 4 model files are NOT committed to git - they're too large for a
+# normal GitHub repo (each is 200-300MB, over GitHub's 100MB hard limit).
+# They're attached instead as assets on a GitHub Release and fetched at
+# Codespace startup by .devcontainer/fetch_models.sh. See README.md.
+*.keras
+
+# Misc
+.DS_Store
+*.log
+
+# v2 additions
+.env
+api/data/
+logs/

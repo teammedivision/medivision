@@ -1,0 +1,12 @@
+flask
+flask-cors
+flask-jwt-extended
+flask-sqlalchemy
+flask-limiter
+python-dotenv
+tensorflow
+numpy
+pillow
+opencv-python-headless
+waitress
+sentry-sdk[flask]

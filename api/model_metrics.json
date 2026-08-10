@@ -1,0 +1,37 @@
+{
+  "_comment": "Served by GET /api/model-info. Replace every null with real numbers from your validation notebook, then keep this file in sync whenever you retrain. Honest, published metrics are a startup credibility requirement.",
+  "updated": "2026-08-10",
+  "evaluation_dataset": "TODO: describe the held-out test set (source, size, class balance, demographics)",
+  "models": {
+    "domain": {
+      "architecture": "ResNet50",
+      "input_size": 224,
+      "classes": ["eye", "skin", "teeth"],
+      "metrics": {"accuracy": null, "macro_f1": null, "notes": "Routing accuracy on held-out test set"}
+    },
+    "skin": {
+      "architecture": "ResNet50",
+      "input_size": 224,
+      "classes": ["Atopic Dermatitis", "Basal Cell Carcinoma", "Benign Keratosis", "Eczema", "Melanocytic Nevus", "Melanoma", "Normal", "Psoriasis", "Seborrheic Keratosis", "Tinea", "Warts"],
+      "metrics": {"top1_accuracy": null, "macro_f1": null, "auc": null, "melanoma_sensitivity": null, "notes": "Melanoma sensitivity matters most clinically - report it separately"}
+    },
+    "eye": {
+      "architecture": "ResNet50",
+      "input_size": 384,
+      "classes": ["Cataract", "Conjunctivitis", "Dry Eye", "Eyelid Drooping", "Normal", "Uveitis"],
+      "metrics": {"top1_accuracy": null, "macro_f1": null, "auc": null, "notes": null}
+    },
+    "teeth": {
+      "architecture": "ResNet50",
+      "input_size": 224,
+      "classes": ["Calculus", "Caries", "Discoloration", "Gingivitis", "Hypodontia", "Mouth Ulcer", "Normal"],
+      "metrics": {"top1_accuracy": null, "macro_f1": null, "auc": null, "notes": null}
+    }
+  },
+  "ood_gate": {
+    "method": "softmax confidence + normalized entropy on the domain router",
+    "min_domain_confidence": 0.70,
+    "max_entropy": 0.90,
+    "caveat": "Heuristic only - see MODEL_CARD.md roadmap for a trained OOD detector"
+  }
+}

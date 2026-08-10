@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Lightweight install - unit tests run with MEDIVISION_SKIP_MODELS=1,
+      # so TensorFlow/OpenCV are not needed in CI.
+      - name: Install test dependencies
+        run: |
+          pip install flask flask-cors flask-jwt-extended flask-sqlalchemy \
+                      flask-limiter python-dotenv pytest
+
+      - name: Run unit tests
+        env:
+          MEDIVISION_SKIP_MODELS: "1"
+        run: |
+          cd api
+          python -m pytest tests -q

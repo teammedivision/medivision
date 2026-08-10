@@ -1,0 +1,87 @@
+/* =========================================================
+ * MediVision auth + history UI styles (used by js/auth.js).
+ * Piggybacks on the design-system variables in styles.css.
+ * ========================================================= */
+
+.mv-nav-box { display: inline-flex; gap: 8px; align-items: center; }
+
+.mv-nav-btn {
+  border: 1px solid var(--border, #DCE6EA);
+  background: var(--surface, #fff);
+  color: var(--ink, #0C2A30);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.mv-nav-btn:hover { box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.08)); transform: translateY(-1px); }
+.mv-nav-in { background: var(--grad-cta, #14808E); color: #fff; border: none; }
+.mv-nav-user { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mv-nav-out { color: var(--ink-3, #6E858C); }
+
+.mv-auth-overlay { z-index: 300; }
+
+.mv-auth-card, .mv-hist-card { position: relative; text-align: left; }
+.mv-hist-card { max-width: 560px; width: min(560px, 92vw); }
+
+.mv-auth-close {
+  position: absolute; top: 10px; right: 14px;
+  border: none; background: none; cursor: pointer;
+  font-size: 1.5rem; line-height: 1; color: var(--ink-3, #6E858C);
+}
+.mv-auth-close:hover { color: var(--ink, #0C2A30); }
+
+.mv-auth-title { margin: 0 0 4px; }
+.mv-auth-sub { color: var(--ink-2, #41575E); font-size: .92rem; margin: 0 0 14px; }
+
+.mv-auth-input {
+  display: block; width: 100%; box-sizing: border-box;
+  margin: 0 0 10px; padding: 11px 13px;
+  border: 1px solid var(--border, #DCE6EA);
+  border-radius: var(--radius, 12px);
+  background: var(--surface-2, #F6FAFB);
+  color: var(--ink, #0C2A30);
+  font: inherit; font-size: .95rem;
+}
+.mv-auth-input:focus { outline: 2px solid var(--teal, #14808E); outline-offset: 1px; }
+
+.mv-auth-err { color: var(--danger, #F0454B); font-size: .88rem; min-height: 1.1em; margin-bottom: 8px; }
+
+.mv-auth-switch {
+  display: block; margin: 12px auto 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--teal, #14808E); font: inherit; font-size: .88rem; font-weight: 600;
+}
+.mv-auth-switch:hover { text-decoration: underline; }
+
+.mv-auth-terms { font-size: .78rem; color: var(--ink-3, #6E858C); text-align: center; margin: 14px 0 0; }
+.mv-auth-terms a { color: var(--teal, #14808E); }
+
+/* ---------- History ---------- */
+.mv-hist-list { max-height: 55vh; overflow-y: auto; margin-top: 6px; }
+.mv-hist-empty { color: var(--ink-3, #6E858C); padding: 18px 0; text-align: center; }
+
+.mv-hist-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 11px 4px; border-bottom: 1px solid var(--border-2, #E8EFF1);
+}
+.mv-hist-row:last-child { border-bottom: none; }
+.mv-hist-main strong { font-size: .95rem; }
+.mv-hist-domain { color: var(--ink-3, #6E858C); font-size: .85rem; text-transform: capitalize; }
+.mv-hist-meta { display: flex; align-items: center; gap: 10px; font-size: .82rem; color: var(--ink-2, #41575E); flex-shrink: 0; }
+.mv-hist-when { color: var(--ink-3, #6E858C); }
+
+.mv-hist-sev {
+  font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+  padding: 3px 8px; border-radius: 999px;
+}
+.mv-sev-urgent   { background: var(--danger-soft, #FDE7E7); color: var(--danger-deep, #B91C1C); }
+.mv-sev-moderate { background: var(--amber-soft, #FEF3C7); color: var(--amber-text, #92400E); }
+.mv-sev-mild     { background: var(--teal-soft, #E3F2F3); color: var(--teal-deep, #0C5A66); }
+.mv-sev-normal   { background: var(--green-soft, #E2F6EE); color: var(--green-deep, #2FAE86); }
+
+/* Dark theme inherits automatically because everything above uses the
+   design-system variables that styles.css redefines under [data-theme="dark"]. */

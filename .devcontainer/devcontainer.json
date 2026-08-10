@@ -1,0 +1,20 @@
+{
+  "name": "MediVision GUI",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "forwardPorts": [5000],
+  "portsAttributes": {
+    "5000": {
+      "label": "MediVision",
+      "onAutoForward": "notify"
+    }
+  },
+  "containerEnv": {
+    "MODEL_RELEASE_TAG": "models-v1"
+  },
+  "postCreateCommand": "pip install -r api/requirements.txt && bash .devcontainer/fetch_models.sh",
+  "postStartCommand": "gh codespace ports visibility 5000:public -c \"$CODESPACE_NAME\" || true"
+}

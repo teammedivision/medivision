@@ -1,0 +1,16 @@
+# Keep the Docker build context small - the zips alone are 3 GB.
+*.zip
+*.keras
+api/venv
+api/venv312
+api/__pycache__
+api/**/__pycache__
+api/.pytest_cache
+api/pytest-cache-files-*
+api/data
+logs
+.git
+.env
+*.docx
+*.xlsx
+.devcontainer

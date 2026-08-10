@@ -1,0 +1,45 @@
+# MediVision - one-command startup.
+#
+#   Default (SQLite):        docker compose up --build
+#   With PostgreSQL:         docker compose --profile postgres up --build
+#                            (and set DATABASE_URL in .env, see .env.example)
+#
+# Copy .env.example to .env first and set SECRET_KEY.
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev-only-change-me}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5000,http://127.0.0.1:5000}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-10 per minute}
+    volumes:
+      # Models are mounted, not baked into the image (~1.1 GB).
+      - ./domain_resnet50.keras:/app/domain_resnet50.keras:ro
+      - ./eye_disease_resnet50.keras:/app/eye_disease_resnet50.keras:ro
+      - ./skin_disease_resnet50.keras:/app/skin_disease_resnet50.keras:ro
+      - ./teeth_disease_resnet50.keras:/app/teeth_disease_resnet50.keras:ro
+      # Persist the SQLite DB and logs across container restarts.
+      - mv_data:/app/api/data
+      - mv_logs:/app/logs
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      - POSTGRES_USER=medivision
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-medivision}
+      - POSTGRES_DB=medivision
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  mv_data:
+  mv_logs:
+  pg_data:
