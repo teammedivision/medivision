@@ -80,9 +80,18 @@ Each stage lives in `api/` — the router and classifiers in `api/models/`, the 
 
 ## Model performance
 
-Metrics are being finalized on held-out test sets and will be published here and in [`MODEL_CARD.md`](MODEL_CARD.md). Live numbers are served from `GET /api/model-info` and rendered on the app's "How It Works" page. Melanoma sensitivity is reported separately because it matters most clinically.
+Held-out **test-set** results for the production ResNet50 models (bootstrap 95% CIs, 1,000 resamples). These are served live from `GET /api/model-info` and rendered on the app's "How It Works" page. Full detail in [`MODEL_CARD.md`](MODEL_CARD.md).
 
-> Honest, reproducible metrics are a credibility requirement — we don't publish a number until it comes from a documented validation run.
+| Model | Top-1 Acc | Top-3 Acc | Macro F1 | Macro AUC |
+|-------|:---------:|:---------:|:--------:|:---------:|
+| Domain router | **99.56%** | 100.0% | 0.996 | ≈1.00 |
+| Skin (11-class) | 83.94% | 96.74% | 0.775 | 0.981 |
+| Eye (6-class) | 93.99% | 99.76% | 0.928 | 0.996 |
+| Dental (7-class) | 95.71% | 99.45% | 0.925 | 0.986 |
+
+**End-to-end pipeline accuracy: 85.91%** on a 5,648-image stress test.
+
+Clinically, the melanoma results matter most: **sensitivity 0.96, F1 0.97, AUC 0.999**. Known weak spot: dental **Caries recall is 0.53** (only 36 test samples) — the top fix on our [roadmap](#roadmap). We report both the strong and the weak numbers because honest, reproducible metrics are a credibility requirement.
 
 ## Tech stack
 

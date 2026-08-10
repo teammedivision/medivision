@@ -1,9 +1,11 @@
 # MediVision Model Card
 
 > Honest, published model documentation is a credibility requirement for any
-> medical-AI startup. Fill in every **TODO** from your training notebook
-> before showing this to users, investors, or partners. Keep it in sync with
+> medical-AI startup. Metrics below are the ResNet50 (production) results from
+> the MediVision Part E Final Report. Keep this in sync with
 > `api/model_metrics.json` (served at `GET /api/model-info`).
+>
+> Last updated: 2026-08-10.
 
 ## Overview
 
@@ -35,25 +37,40 @@ a plain-language explanation.
 
 ## Training Data
 
-**TODO — document precisely:**
-- Sources (ISIC dermatology collections, Mendeley eye imagery, Roboflow
-  dental sets — list the exact dataset versions and licenses).
-- Number of images per class after de-duplication, and train/val/test splits.
-- Demographic composition where known (skin tones / Fitzpatrick types, age
-  groups, capture devices). Known skew must be listed under Limitations.
+The unified corpus contains **35,884 deduplicated images across 24 disease
+classes** in three domains, aggregated from public Kaggle, ISIC, and Roboflow
+datasets, plus a **4,500-image** subset used to train the domain router.
+
+- **Split:** 70 / 15 / 15 train / validation / test, stratified by class and
+  verified free of path-level leakage between splits.
+- **Rebalancing:** Melanocytic Nevus capped at 3,500 training samples; seven
+  minority skin classes upsampled to 2,000 each; Dry Eye and Uveitis augmented
+  with 150 neural-style-transfer synthetic images each.
+- **Deduplication:** a 16×16 grayscale average-hash perceptual filter removed
+  5,855 duplicates (976 skin, 27 eye, 4,852 teeth) that were inflating counts
+  and risking train/test leakage.
+- **Approx. per-domain size:** skin ≈ 18.5K images (11 classes), teeth ≈ 11K
+  (7 classes), eye ≈ 1.9K (6 classes).
+
+**Still to document:** exact dataset versions/licenses and demographic
+composition (skin tones / Fitzpatrick types, age, capture devices). Known skew
+is listed under Limitations.
 
 ## Performance
 
-**TODO — replace with real held-out test-set numbers** (also update
-`api/model_metrics.json` and the four `data-metric` values in
-`frontend/index.html`):
+Held-out **test-set** results for the production **ResNet50** models (bootstrap
+95% CIs, 1,000 resamples). Kept in sync with `api/model_metrics.json`.
 
-| Model | Top-1 Acc | Macro F1 | AUC | Clinically critical metric |
-|---|---|---|---|---|
-| Domain router | TODO | TODO | — | Routing error rate |
-| Skin | TODO | TODO | TODO | **Melanoma sensitivity** (report separately) |
-| Eye | TODO | TODO | TODO | Uveitis sensitivity |
-| Dental | TODO | TODO | TODO | Caries sensitivity |
+| Model | Top-1 Acc | Top-3 Acc | Macro F1 | Wtd F1 | Macro AUC | Clinically critical metric |
+|---|---|---|---|---|---|---|
+| Domain router | 99.56% | 100.0% | 0.996 | 0.996 | ≈1.00 | 3 misroutes / 675 images |
+| Skin (11-class) | 83.94% | 96.74% | 0.775 | 0.841 | 0.981 | **Melanoma sensitivity 0.96** (F1 0.97, AUC 0.999) |
+| Eye (6-class) | 93.99% | 99.76% | 0.928 | 0.939 | 0.996 | Macro AUC 0.996 |
+| Dental (7-class) | 95.71% | 99.45% | 0.925 | 0.955 | 0.986 | **Caries recall 0.53** (36 samples) |
+
+**End-to-end pipeline accuracy: 85.91%** on a 5,648-image stress test.
+
+Confidence intervals: Domain [98.96%, 99.93%], Skin [82.79%, 85.12%].
 
 Note on calibration: softmax confidence is not a calibrated probability. A
 displayed "87%" does not mean 87% chance of being correct. Roadmap: apply
@@ -79,6 +96,14 @@ that fool the router will still be classified.
   augmentation, no uncertainty estimation beyond softmax.
 - Image-quality sensitivity: blur, poor lighting, and occlusion degrade
   accuracy silently (low-confidence flag partially mitigates this).
+- **Caries recall (0.53):** the dental Caries class has only 36 test samples;
+  precision is perfect (1.00) but the model misses about half of true caries
+  cases. Highest-priority fix on the roadmap (more caries data + augmentation).
+- Inflammatory dermatoses (Atopic Dermatitis F1 0.56, Psoriasis F1 0.62) are
+  frequently confused with each other due to overlapping visual presentation.
+- Domain-routing artefact sensitivity: the router may partly rely on
+  source-dataset artefacts (lighting, camera type, crop patterns) rather than
+  purely clinical features — a risk for real-world generalization.
 
 ## Retraining Roadmap (path to a credible medical product)
 
@@ -92,5 +117,4 @@ that fool the router will still be classified.
 
 ## Contact
 
-Maintainers: Yash Hingu and team. Update this card with a contact email
-before public launch.
+Maintainers: Arnav Mehta and Yash Hingu. Contact: **team.medivision@gmail.com**.

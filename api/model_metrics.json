@@ -1,37 +1,81 @@
 {
-  "_comment": "Served by GET /api/model-info. Replace every null with real numbers from your validation notebook, then keep this file in sync whenever you retrain. Honest, published metrics are a startup credibility requirement.",
+  "_comment": "Served by GET /api/model-info and rendered on the app's How It Works page. Numbers are the ResNet50 (production) results from the MediVision Part E Final Report, Table 4, plus per-class detail from the confusion-matrix and ROC figures. All figures are on held-out test sets with bootstrap 95% CIs (1,000 resamples). Keep this in sync whenever you retrain.",
   "updated": "2026-08-10",
-  "evaluation_dataset": "TODO: describe the held-out test set (source, size, class balance, demographics)",
+  "production_backbone": "ResNet50",
+  "evaluation_dataset": "35,884 deduplicated medical images spanning 24 disease classes across 3 domains (skin, eye, teeth), aggregated from Kaggle, ISIC, and Roboflow sources, plus a 4,500-image domain-routing subset. A 70/15/15 train/validation/test split was applied, stratified by class and verified free of path-level leakage. Melanocytic Nevus was capped at 3,500 training samples; seven minority skin classes were upsampled to 2,000 each; Dry Eye and Uveitis were augmented with 150 neural-style-transfer synthetic images each.",
+  "pipeline_end_to_end": {
+    "accuracy": 85.91,
+    "test_images": 5648,
+    "notes": "Full domain-router -> disease-classifier pipeline measured end-to-end on a 5,648-image stress test."
+  },
   "models": {
     "domain": {
       "architecture": "ResNet50",
       "input_size": 224,
       "classes": ["eye", "skin", "teeth"],
-      "metrics": {"accuracy": null, "macro_f1": null, "notes": "Routing accuracy on held-out test set"}
+      "metrics": {
+        "accuracy": 99.56,
+        "top3_accuracy": 100.0,
+        "macro_f1": 0.996,
+        "weighted_f1": 0.996,
+        "macro_auc": 0.999,
+        "abstain_rate": 1.0,
+        "ci95": "[98.96, 99.93]",
+        "notes": "Routing accuracy on a held-out 675-image test set (only 3 misroutes). Macro AUC effectively 1.0; every class achieves AUC >= 0.997."
+      }
     },
     "skin": {
       "architecture": "ResNet50",
       "input_size": 224,
       "classes": ["Atopic Dermatitis", "Basal Cell Carcinoma", "Benign Keratosis", "Eczema", "Melanocytic Nevus", "Melanoma", "Normal", "Psoriasis", "Seborrheic Keratosis", "Tinea", "Warts"],
-      "metrics": {"top1_accuracy": null, "macro_f1": null, "auc": null, "melanoma_sensitivity": null, "notes": "Melanoma sensitivity matters most clinically - report it separately"}
+      "metrics": {
+        "top1_accuracy": 83.94,
+        "top3_accuracy": 96.74,
+        "macro_f1": 0.775,
+        "weighted_f1": 0.841,
+        "macro_auc": 0.981,
+        "abstain_rate": 17.2,
+        "ci95": "[82.79, 85.12]",
+        "melanoma_sensitivity": 0.96,
+        "melanoma_f1": 0.97,
+        "melanoma_auc": 0.999,
+        "notes": "Hardest task (11 classes, high inter-class similarity). Strongest on the clinically critical malignant classes: Melanoma sensitivity 0.96 / F1 0.97 / AUC 0.999, BCC F1 0.92. Weaker on visually similar inflammatory dermatoses (Atopic Dermatitis F1 0.56). Melanoma sensitivity is the row-normalized recall from the confusion matrix."
+      }
     },
     "eye": {
       "architecture": "ResNet50",
       "input_size": 384,
       "classes": ["Cataract", "Conjunctivitis", "Dry Eye", "Eyelid Drooping", "Normal", "Uveitis"],
-      "metrics": {"top1_accuracy": null, "macro_f1": null, "auc": null, "notes": null}
+      "metrics": {
+        "top1_accuracy": 93.99,
+        "top3_accuracy": 99.76,
+        "macro_f1": 0.928,
+        "weighted_f1": 0.939,
+        "macro_auc": 0.996,
+        "abstain_rate": 13.5,
+        "notes": "384x384 inputs. Macro AUC 0.996, with Normal and Cataract achieving near-perfect AUC = 1.000."
+      }
     },
     "teeth": {
       "architecture": "ResNet50",
       "input_size": 224,
       "classes": ["Calculus", "Caries", "Discoloration", "Gingivitis", "Hypodontia", "Mouth Ulcer", "Normal"],
-      "metrics": {"top1_accuracy": null, "macro_f1": null, "auc": null, "notes": null}
+      "metrics": {
+        "top1_accuracy": 95.71,
+        "top3_accuracy": 99.45,
+        "macro_f1": 0.925,
+        "weighted_f1": 0.955,
+        "macro_auc": 0.986,
+        "abstain_rate": 11.6,
+        "caries_recall": 0.53,
+        "notes": "Highest single-domain accuracy. Key limitation: Caries recall is only 0.53 on 36 test samples (precision 1.00), so about half of true caries cases are missed - see MODEL_CARD.md roadmap."
+      }
     }
   },
   "ood_gate": {
     "method": "softmax confidence + normalized entropy on the domain router",
     "min_domain_confidence": 0.70,
     "max_entropy": 0.90,
-    "caveat": "Heuristic only - see MODEL_CARD.md roadmap for a trained OOD detector"
+    "caveat": "Heuristic only - see MODEL_CARD.md roadmap for a trained OOD detector."
   }
 }
