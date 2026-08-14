@@ -1,0 +1,95 @@
+# ============================================================================
+#  Convert the Keras models to TensorFlow.js — entirely on GitHub.
+#
+#  Runs on GitHub's servers: downloads the trained .keras files from the
+#  "models-v1" Release, converts them to browser-ready TensorFlow.js format,
+#  and commits the result to frontend/models/. The Pages workflow then serves
+#  it, so analysis runs in the visitor's browser with no server anywhere.
+#
+#  PREREQUISITE (one-time, only you can do it): the trained .keras files must
+#  be uploaded to a Release tagged "models-v1". They live on your machine and
+#  are too large for the repo — see TFJS-POC.md. Until that Release exists,
+#  the download step below fails with a clear message.
+#
+#  Trigger: Actions tab -> "Convert models to TensorFlow.js" -> Run workflow.
+# ============================================================================
+name: Convert models to TensorFlow.js
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Which model to convert"
+        type: choice
+        default: domain
+        options: [domain, skin, eye, teeth, all]
+      quantization:
+        description: "Weight precision (float16 keeps accuracy; uint8 is smaller)"
+        type: choice
+        default: float16
+        options: [float16, uint8, none]
+
+permissions:
+  contents: write          # needed to commit the converted models back
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Work out which .keras file(s) to fetch
+        id: pick
+        run: |
+          case "${{ inputs.model }}" in
+            domain) echo "pattern=domain_resnet50.keras"        >> "$GITHUB_OUTPUT" ;;
+            skin)   echo "pattern=skin_disease_resnet50.keras"  >> "$GITHUB_OUTPUT" ;;
+            eye)    echo "pattern=eye_disease_resnet50.keras"   >> "$GITHUB_OUTPUT" ;;
+            teeth)  echo "pattern=teeth_disease_resnet50.keras" >> "$GITHUB_OUTPUT" ;;
+            all)    echo "pattern=*.keras"                      >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Download trained model(s) from the models-v1 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view models-v1 >/dev/null 2>&1; then
+            echo "::error::Release 'models-v1' not found. Upload the trained .keras"
+            echo "::error::files to a Release tagged models-v1 first (see TFJS-POC.md)."
+            exit 1
+          fi
+          gh release download models-v1 --pattern "${{ steps.pick.outputs.pattern }}" --dir . --clobber
+          echo "Downloaded:" && ls -lh *.keras
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install TensorFlow + converter
+        run: |
+          python -m pip install --upgrade pip
+          # tensorflow provides Keras 3 (to read the .keras files); tensorflowjs
+          # provides the converter. Installed together so versions resolve once.
+          pip install "tensorflow-cpu>=2.16,<2.18" "tensorflowjs>=4.17"
+
+      - name: Convert to TensorFlow.js
+        run: |
+          FLAG=""
+          [ "${{ inputs.quantization }}" = "uint8" ] && FLAG="--uint8"
+          [ "${{ inputs.quantization }}" = "none" ]  && FLAG="--no-quant"
+          python tools/convert_to_tfjs.py --model "${{ inputs.model }}" $FLAG
+
+      - name: Commit the converted models
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/models/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add TensorFlow.js models: ${{ inputs.model }} (${{ inputs.quantization }})"
+            git push
+            echo "Committed converted models. The Pages deploy will publish them."
+          fi

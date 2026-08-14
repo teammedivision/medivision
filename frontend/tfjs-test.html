@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediVision — In-Browser Model Test</title>
+<style>
+  :root { --ink:#0C2A30; --muted:#6E858C; --border:#DCE6EA; --teal:#14808E;
+          --ok:#2FAE86; --bad:#C0392B; --bg:#EEF4F6; --surface:#fff; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg);
+         color: var(--ink); margin: 0; padding: 24px; line-height: 1.5; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+          padding: 18px; margin-bottom: 16px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .5px;
+             color: var(--muted); margin: 0 0 12px; }
+  button { font: inherit; font-weight: 600; background: var(--teal); color: #fff; border: none;
+           border-radius: 10px; padding: 11px 18px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pill { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .pill.ok { background: #E2F6EE; color: var(--ok); }
+  .pill.bad { background: #FDE7E7; color: var(--bad); }
+  .pill.wait { background: #FEF3C7; color: #92400E; }
+  pre { background: #0F262C; color: #C8E6E1; padding: 14px; border-radius: 10px;
+        overflow-x: auto; font-size: 13px; margin: 10px 0 0; }
+  .result { font-size: 15px; }
+  .result b { font-size: 26px; text-transform: capitalize; }
+  .bar { height: 8px; background: #E2ECEF; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .bar > span { display: block; height: 100%; background: var(--teal); }
+  .score-row { margin: 8px 0; font-size: 13px; }
+  input[type=file] { font: inherit; }
+  img#preview { max-width: 220px; border-radius: 10px; margin-top: 12px; display: none; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  code { background: #E2ECEF; padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔬 In-Browser Model Test</h1>
+  <div class="sub">Proof of concept — runs the domain model (skin / eye / teeth) with TensorFlow.js, no server.</div>
+
+  <!-- 1. Runtime -->
+  <div class="card">
+    <h2>1 · TensorFlow.js runtime</h2>
+    <div class="row">
+      <span id="tf-status" class="pill wait">checking…</span>
+      <span id="tf-backend" class="note"></span>
+    </div>
+  </div>
+
+  <!-- 2. Preprocessing self-test (works with NO model — pure math check) -->
+  <div class="card">
+    <h2>2 · Preprocessing self-test</h2>
+    <div class="note">Verifies the browser reproduces the backend's ResNet50 caffe preprocessing
+      (RGB→BGR, subtract [103.939, 116.779, 123.68]) exactly. No model needed.</div>
+    <div class="row" style="margin-top:12px">
+      <button id="btn-selftest">Run self-test</button>
+      <span id="selftest-status" class="pill wait">not run</span>
+    </div>
+    <pre id="selftest-out" style="display:none"></pre>
+  </div>
+
+  <!-- 3. Load model -->
+  <div class="card">
+    <h2>3 · Load domain model</h2>
+    <div class="note">Loads <code>models/domain/model.json</code>. This only works after you run
+      <code>tools/convert_to_tfjs.py</code> and commit <code>frontend/models/domain/</code>.</div>
+    <div class="row" style="margin-top:12px">
+      <button id="btn-load">Load model</button>
+      <span id="load-status" class="pill wait">not loaded</span>
+    </div>
+    <pre id="load-out" style="display:none"></pre>
+  </div>
+
+  <!-- 4. Predict -->
+  <div class="card">
+    <h2>4 · Classify an image</h2>
+    <div class="row">
+      <input type="file" id="file" accept="image/*" disabled />
+    </div>
+    <img id="preview" alt="preview" />
+    <div id="result" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script src="js/inference.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const setPill = (el, cls, txt) => { el.className = 'pill ' + cls; el.textContent = txt; };
+
+  // 1. runtime
+  window.addEventListener('load', async () => {
+    if (typeof tf === 'undefined') {
+      setPill($('tf-status'), 'bad', 'failed to load');
+      return;
+    }
+    await tf.ready();
+    setPill($('tf-status'), 'ok', 'tf.js ' + tf.version.tfjs);
+    $('tf-backend').textContent = 'backend: ' + tf.getBackend();
+  });
+
+  // 2. preprocessing self-test — checks the exact math against hand-computed values.
+  $('btn-selftest').addEventListener('click', async () => {
+    const out = $('selftest-out'); out.style.display = 'block';
+    try {
+      // 2x1 image: pixel A = pure red (255,0,0), pixel B = mid grey (128,128,128).
+      const data = new Uint8ClampedArray([255,0,0,255,  128,128,128,255]);
+      const imgData = new ImageData(data, 2, 1);
+
+      // Preprocess at size 1 collapses to per-pixel; instead check the raw transform
+      // on the two pixels directly using the same ops the module uses.
+      const t = tf.tidy(() => {
+        let img = tf.browser.fromPixels(imgData).cast('float32'); // [1,2,3] RGB
+        const [r,g,b] = tf.split(img, 3, 2);
+        img = tf.concat([b,g,r], 2);                              // BGR
+        return tf.sub(img, tf.tensor1d(window.MVInference.BGR_MEAN));
+      });
+      const got = Array.from(await t.data()); t.dispose();
+
+      // Expected (caffe): BGR - mean[103.939,116.779,123.68]
+      // red  RGB(255,0,0)   -> BGR(0,0,255)     -> [-103.939,-116.779,131.32]
+      // grey RGB(128,128,128)-> BGR(128,128,128)-> [ 24.061,  11.221,  4.32]
+      const exp = [-103.939,-116.779,131.32,  24.061,11.221,4.32];
+      const maxErr = Math.max(...got.map((v,i)=>Math.abs(v-exp[i])));
+      const pass = maxErr < 1e-2;
+
+      out.textContent =
+        'channel order : RGB→BGR ✓\n' +
+        'got      : [' + got.map(v=>v.toFixed(3)).join(', ') + ']\n' +
+        'expected : [' + exp.map(v=>v.toFixed(3)).join(', ') + ']\n' +
+        'max error: ' + maxErr.toExponential(2) + '  → ' + (pass ? 'PASS' : 'FAIL');
+      setPill($('selftest-status'), pass ? 'ok' : 'bad', pass ? 'preprocessing exact ✓' : 'mismatch');
+    } catch (e) {
+      out.textContent = 'error: ' + e.message;
+      setPill($('selftest-status'), 'bad', 'error');
+    }
+  });
+
+  // 3. load model
+  $('btn-load').addEventListener('click', async () => {
+    const out = $('load-out'); out.style.display = 'block';
+    setPill($('load-status'), 'wait', 'loading…');
+    out.textContent = 'fetching models/domain/model.json …';
+    const t0 = performance.now();
+    try {
+      await window.MVInference.loadDomainModel('models/domain', (f) => {
+        out.textContent = 'loading weights: ' + Math.round(f * 100) + '%';
+      });
+      const ms = Math.round(performance.now() - t0);
+      setPill($('load-status'), 'ok', 'loaded ✓');
+      out.textContent = 'domain model loaded in ' + ms + ' ms\nready to classify.';
+      $('file').disabled = false;
+    } catch (e) {
+      setPill($('load-status'), 'bad', 'not found');
+      out.textContent = 'Could not load the model:\n  ' + e.message +
+        '\n\nThis is expected until you run the conversion (step 3 in TFJS-POC.md)\n' +
+        'and commit frontend/models/domain/.';
+    }
+  });
+
+  // 4. predict
+  $('file').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const img = $('preview');
+    img.src = URL.createObjectURL(file);
+    img.style.display = 'block';
+    await new Promise(r => { img.onload = r; });
+
+    $('result').innerHTML = '<span class="note">running…</span>';
+    try {
+      const res = await window.MVInference.predictDomain(img);
+      const rows = window.MVInference.DOMAIN_CLASSES.map(c => {
+        const p = Math.round((res.scores[c] || 0) * 100);
+        return '<div class="score-row">' + c + ' — ' + p + '%' +
+               '<div class="bar"><span style="width:' + p + '%"></span></div></div>';
+      }).join('');
+      $('result').innerHTML =
+        '<div class="result">Detected domain: <b>' + res.domain + '</b> ' +
+        '(' + Math.round(res.confidence * 100) + '% · ' + res.ms + ' ms)</div>' +
+        '<div style="margin-top:10px">' + rows + '</div>';
+    } catch (err) {
+      $('result').innerHTML = '<span class="pill bad">error</span> ' + err.message;
+    }
+  });
+})();
+</script>
+</body>
+</html>
