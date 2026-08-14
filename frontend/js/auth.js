@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var API_BASE = (location.port === '8080') ? 'http://localhost:5000' : '';
+  var API_BASE = window.MV_API_BASE || '';   // set in js/config.js
   var TOKEN_KEY = 'mv_token';
   var EMAIL_KEY = 'mv_email';
 

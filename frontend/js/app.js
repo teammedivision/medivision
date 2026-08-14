@@ -6,11 +6,11 @@
 (function () {
   'use strict';
 
-  // Same-origin by default (works locally and once tunneled/deployed behind
-  // a single URL, since app.py now serves this frontend too). Falls back to
-  // localhost:5000 only if this file is still being served the old way, via
-  // `python -m http.server 8080` instead of through the Flask app.
-  const API_BASE = (location.port === '8080') ? 'http://localhost:5000' : '';
+  // Resolved in js/config.js — the single place the backend URL is set.
+  // Empty means same-origin, which is correct when Flask serves this
+  // frontend itself, but wrong on GitHub Pages (static hosting cannot run
+  // the API). See js/config.js.
+  const API_BASE = window.MV_API_BASE || '';
   const MAX_BYTES = 10 * 1024 * 1024;
   const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
   const LOW_CONFIDENCE_THRESHOLD = 0.50;
@@ -376,7 +376,9 @@
     el['preview-name'].textContent = file.name;
     el['preview-size'].textContent = formatBytes(file.size);
     el['preview-card'].classList.remove('hidden');
-    el['analyze-btn'].disabled = false;
+    // Stays disabled when the backend is unreachable — picking a file must
+    // not make an unusable button look ready.
+    el['analyze-btn'].disabled = !apiReachable;
   }
 
   function formatBytes(n) {
@@ -918,6 +920,52 @@
   }
 
   /* -------------------------------------------------
+   * Backend availability
+   *
+   * On static hosting (GitHub Pages) there is no API at all, and a hosted
+   * backend can be asleep or down. Check once at load and say so plainly,
+   * rather than letting someone upload a medical photo into a void and
+   * meet a generic network error afterwards.
+   * ------------------------------------------------- */
+  let apiReachable = true;
+
+  function setApiUnavailable(detail) {
+    apiReachable = false;
+    const banner = document.getElementById('api-offline-banner');
+    const detailEl = document.getElementById('api-offline-detail');
+    if (detailEl && detail) detailEl.textContent = detail;
+    if (banner) banner.classList.remove('hidden');
+    const btn = el['analyze-btn'];
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Screening Unavailable';
+    }
+  }
+
+  function checkApiHealth() {
+    // No timeout support in older Safari — race it manually.
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 8000));
+
+    Promise.race([
+      fetch(`${API_BASE}/api/health`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+      timeout,
+    ])
+      .then(res => {
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        return res.json().catch(() => ({}));
+      })
+      .then(() => { apiReachable = true; })
+      .catch(() => {
+        setApiUnavailable(
+          API_BASE
+            ? 'The analysis service is not responding. Please try again later.'
+            : 'This deployment has no analysis service configured, so images cannot be processed.'
+        );
+      });
+  }
+
+  /* -------------------------------------------------
    * Wire-up
    * ------------------------------------------------- */
   document.addEventListener('DOMContentLoaded', () => {
@@ -928,6 +976,7 @@
     initSymptomChips();
     animateCounters();
     loadModelMetrics();
+    checkApiHealth();
 
     el['begin-btn'].addEventListener('click', () => setState(STATES.UPLOAD));
     el['proceed-btn'].addEventListener('click', () => setState(STATES.UPLOAD));

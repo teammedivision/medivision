@@ -44,7 +44,8 @@
   border-radius: var(--radius, 12px);
   background: var(--surface-2, #F6FAFB);
   color: var(--ink, #0C2A30);
-  font: inherit; font-size: .95rem;
+  /* 16px prevents iOS Safari from zooming the page when the field is focused. */
+  font: inherit; font-size: 16px;
 }
 .mv-auth-input:focus { outline: 2px solid var(--teal, #14808E); outline-offset: 1px; }
 

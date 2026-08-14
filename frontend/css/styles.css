@@ -724,7 +724,9 @@ textarea {
   border-radius: var(--radius);
   padding: 13px 15px;
   font-family: var(--sans);
-  font-size: 14px;
+  /* 16px, not 14px: iOS Safari zooms the whole page when a focused field is
+     under 16px. The desktop difference is negligible. */
+  font-size: 16px;
   resize: vertical;
   color: var(--ink);
   transition: border-color .2s, box-shadow .2s;
@@ -1018,7 +1020,12 @@ textarea::placeholder { color: var(--ink-3); }
   position: fixed; inset: 0;
   background: rgba(8, 21, 25, 0.7);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
+  /* justify-content centres horizontally; margin:auto on the card centres it
+     vertically WHEN it fits and lets the overlay scroll when it does not.
+     align-items:center would clip a tall card's top out of reach — which on a
+     landscape phone hid the "Accept" button and blocked the whole app. */
+  display: flex; justify-content: center;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
   z-index: 999; padding: 24px;
 }
 .modal-card {
@@ -1027,6 +1034,7 @@ textarea::placeholder { color: var(--ink-3); }
   border-radius: var(--radius-lg);
   padding: 34px;
   max-width: 580px; width: 100%;
+  margin: auto;
   box-shadow: var(--shadow-lg);
   animation: fadeUp .4s ease both;
 }
@@ -1245,7 +1253,8 @@ textarea::placeholder { color: var(--ink-3); }
 .nav-toggle {
   display: none; background: var(--surface);
   border: 1px solid var(--border); border-radius: 12px;
-  color: var(--teal-light); padding: 8px; cursor: pointer;
+  color: var(--teal-light); cursor: pointer;
+  width: 44px; height: 44px;   /* comfortable touch target */
   align-items: center; justify-content: center;
 }
 .nav-toggle:hover { background: var(--teal-soft); }
@@ -1262,20 +1271,30 @@ textarea::placeholder { color: var(--ink-3); }
   .accepts { grid-template-columns: 1fr; }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 760px) {
-  .nav-inner { padding: 12px 18px; position: relative; }
-  .brand { margin-right: 0; font-size: 19px; }
+/* Collapse the navbar to a hamburger at 900px, not 760px. Between ~761px and
+   ~850px the full desktop nav (brand + links + "research preview" badge +
+   theme toggle + auth buttons) does not fit and spilled off-screen, causing
+   horizontal scroll on iPad-portrait and small laptop windows. */
+@media (max-width: 900px) {
+  .nav-inner { position: relative; }
   .nav-toggle { display: inline-flex; order: 3; }
   .nav-right { gap: 8px; }
   .nav-links {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
     flex-direction: column; gap: 0; background: var(--surface);
     border-bottom: 1px solid var(--border); box-shadow: var(--shadow-md);
-    padding: 8px 18px 12px;
+    padding: 8px 18px 12px; z-index: 50;
   }
   .nav-links.open { display: flex; }
-  .nav-links a { display: block; padding: 12px 4px; font-size: 15px; border-bottom: 1px solid var(--border-2); }
+  .nav-links a { display: block; padding: 13px 4px; font-size: 15px; border-bottom: 1px solid var(--border-2); }
   .navbar .badge { display: none; }
+}
+
+@media (max-width: 760px) {
+  .nav-inner { padding: 12px 18px; }
+  .brand { margin-right: 0; font-size: 19px; }
+  .modal-overlay { padding: 16px; }
+  .modal-card { padding: 26px 22px; }
   .hero { padding: 56px 20px 24px; }
   .hero-title { font-size: 32px; }
   .result-hero { grid-template-columns: 1fr; justify-items: center; text-align: center; }
@@ -1306,3 +1325,18 @@ textarea::placeholder { color: var(--ink-3); }
   .results-actions { display: none !important; }
   .results-row, .insight-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── API OFFLINE BANNER ─────────────────────────────────────────────────────
+   Shown when the backend is unreachable — see checkApiHealth() in app.js.
+   Deliberately loud: this is a medical screening tool, and a page that looks
+   functional while the model is unreachable is worse than an obvious outage. */
+.api-offline {
+  background: #7f1d1d;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+.api-offline strong { display: block; font-weight: 700; margin-bottom: 2px; }
+.api-offline span { opacity: 0.9; font-size: 13px; }

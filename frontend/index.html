@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#14808E" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2314808E'/%3E%3Crect x='13' y='6' width='6' height='20' rx='2' fill='white'/%3E%3Crect x='6' y='13' width='20' height='6' rx='2' fill='white'/%3E%3C/svg%3E" />
   <title>MediVision &mdash; AI Medical Image Screening</title>
-  <link rel="stylesheet" href="css/styles.css?v=2" />
-  <link rel="stylesheet" href="css/auth.css?v=2" />
+  <link rel="stylesheet" href="css/styles.css?v=4" />
+  <link rel="stylesheet" href="css/auth.css?v=4" />
 </head>
 <body>
 
@@ -111,6 +111,13 @@
       </div>
     </div>
   </nav>
+
+  <!-- Shown only when the backend cannot be reached. Without this the app
+       looks fully working and fails only after an image has been uploaded. -->
+  <div id="api-offline-banner" class="api-offline hidden" role="alert">
+    <strong>Screening is unavailable right now.</strong>
+    <span id="api-offline-detail">The analysis service cannot be reached, so images cannot be processed.</span>
+  </div>
 
   <main>
 
@@ -804,7 +811,8 @@
   </div>
 
   <script src="js/jspdf.umd.min.js"></script>
-  <script src="js/auth.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/config.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>

@@ -1,0 +1,60 @@
+# ============================================================================
+#  Deploy the frontend to GitHub Pages.
+#
+#  Publishes ONLY ./frontend, so the app is served at the site root:
+#      https://teammedivision.github.io/medivision/
+#
+#  This replaces the two workflows that used to live here (jekyll-gh-pages.yml
+#  and static.yml). Both deployed on every push to main and shared the same
+#  "pages" concurrency group, so they raced — Jekyll usually won and published
+#  README.md as the home page, which is why the app was not visible.
+#
+#  NOTE: the API is NOT deployed here. GitHub Pages serves static files only
+#  and cannot run Flask/TensorFlow. Point frontend/js/config.js at a hosted
+#  backend — see CLOUDRUN_DEPLOY.md or HF_DEPLOY.md.
+# ============================================================================
+name: Deploy frontend to Pages
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # .nojekyll stops Pages running the files through Jekyll, which would
+      # otherwise ignore any file or folder beginning with an underscore.
+      - name: Disable Jekyll processing
+        run: touch frontend/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload frontend
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './frontend'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
